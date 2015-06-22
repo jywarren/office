@@ -15,10 +15,10 @@
 }
 
 body {
-  width:100%;
+  font-size:14px;
   color:#fff;
   background:#222;
-  padding:10% 5%;
+  padding:7% 0 0;
   text-align:center;
 }
 
@@ -31,6 +31,10 @@ h1, h2, h3 {
   text-align:center;
 }
 
+p {
+  margin:5px 0;
+}
+
 .btn-inverse {
   color:#fff;
 }
@@ -41,6 +45,11 @@ h1, h2, h3 {
 
 .btn-inverse:active {
   color:#f00;
+}
+
+.grid     .btn-inverse,
+.controls .btn-inverse {
+  padding:6.5% 9%;
 }
 
 .controls .btn-inverse:hover {
