@@ -47,6 +47,10 @@ p {
   color:#f00;
 }
 
+.btn-inverse.playing {
+  color:#f00;
+}
+
 .grid     .btn-inverse,
 .controls .btn-inverse {
   padding:6.5% 9%;
