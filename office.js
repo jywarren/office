@@ -30,9 +30,12 @@ Office = Class({
   play: function() {
     if (this.playing) {
       this.playing = false;
+      clearInterval(this.interval);
+      this.beat = 1;
     } else {
-      this.interval = setInterval(this.run.bind(this),1000*60/(this.bpm/4));
       this.playing = true;
+      this.run();
+      this.interval = setInterval(this.run.bind(this),1000*60/(this.bpm*4));
     }
   },
 
@@ -60,7 +63,7 @@ Office = Class({
     }
     $('.play').click(function(){ office.play.apply(office); });
 
-    //this.programMultiple([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],'closedHat');
+    this.programMultiple([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],'closedHat');
     this.programMultiple([1,4,8,12],'kick');
     this.programMultiple([2,6,10,14],'snare');
 
