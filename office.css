@@ -17,8 +17,7 @@
 body {
   font-size:14px;
   color:#fff;
-  background:#222;
-  padding:7% 0 0;
+  background:#222; padding:7% 0 0;
   text-align:center;
 }
 
@@ -59,6 +58,18 @@ p {
 .controls .btn-inverse:hover {
   color:#048;
 }
+
 .controls .btn-inverse:active {
   color:#08f;
 }
+
+.controls .btn-inverse.red,
+.grid .btn-inverse.red {
+  color:#f00;
+}
+
+.controls .btn-inverse.blue,
+.grid .btn-inverse.blue {
+  color:#08f;
+}
+
