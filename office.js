@@ -61,6 +61,9 @@ Office = Class({
   },
 
   initialize: function() {
+    this.recording = false;
+    this.voice = false;
+
     // build sequence
     for (var i = 0; i < this.beats; i++) {
       this.sequence.push([]);
@@ -72,15 +75,18 @@ Office = Class({
     this.programMultiple([3,7,11,15],'snare');
 
     $('.bpm').click(this.nextBpm.bind(this));
+    $('.record').click(this.record.bind(this));
 
     this.setup();
   },
 
   program: function(i,note) {
+    console.log(note,'at',i);
     this.sequence[i].push(note);
   },
 
   programMultiple: function(a,note) {
+    console.log(note,'at',a.join(','));
     for (var i = 0; i < a.length; i++) {
       this.sequence[a[i]-1].push(note);
     }
@@ -99,6 +105,7 @@ Office = Class({
         $('.grid p:last').append(el)
         this.grid.push($('.grid p:last .btn:last'));
         el = $('.btn-'+index)
+        $(el).attr('index',index);
 
         var key = Object.keys(this.sounds)[index];
         var sound = this.sounds[key];
@@ -108,12 +115,14 @@ Office = Class({
             // turn off LED
             $(el).addClass('playing');
           }
-          $('.btn-'+index).click(function() {
+          // won't have 'this' scope in click handler
+          var that = this;
+          var onClick = function() {
             // turn on LED
             $(this).removeClass('playing');
-            // ugly global scope!
-            office.sounds[$(this).attr('sound')].play();
-          });
+            that.sounds[$(this).attr('sound')].play();
+          }
+          $('.btn-'+index).click(onClick);
         }
       }
     }
@@ -126,7 +135,46 @@ Office = Class({
     console.log(this.bpm);
   },
 
+  record: function() {
+    if (this.recording) {
+      $('.record').removeClass('red');
+      this.voice = false;
+      // restore original click handlers for buttons; just playing
+
+
+
+
+    } else {
+      $('.record').addClass('red');
+      if (this.voice == false) {
+        // choose a voice
+        var blinkChoice = function() {
+          $('.grid .btn').toggleClass('red');
+        }
+        this.choiceInterval = setInterval(blinkChoice,250);
+        var that = this, onClick = function() {
+          clearInterval(that.choiceInterval);
+          $('.grid .btn').removeClass('red');
+          that.voice = $(this).attr('sound');
+          $('.grid .btn').off('click');
+          // each button programs its position with this.voice
+          var onClick = function() {
+            var i = parseInt($(this).attr('index'));
+            that.program.bind(that,i,that.voice)();
+          }
+          $('.grid .btn').click(onClick);
+        }
+        // clear other listeners
+        $('.grid .btn').off('click');
+        $('.grid .btn').click(onClick);
+      }
+    }
+  },
+
   sounds: {
+    'kick': new Howl({
+      urls: ['audio/CYCdh_AcouKick-01.mp3'],
+    }),
     'snare': new Howl({
       urls: ['audio/CYCdh_LudFlamA-01.mp3'],
     }),
@@ -135,9 +183,6 @@ Office = Class({
     }),
     'openHat': new Howl({
       urls: ['audio/KHats Open-04.mp3'],
-    }),
-    'kick': new Howl({
-      urls: ['audio/CYCdh_AcouKick-01.mp3'],
     })
   }
 
