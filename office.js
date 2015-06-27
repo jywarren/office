@@ -42,14 +42,22 @@ Office = Class({
 
     $('.grid .btn').removeClass('playing');
 
-    var sequenced = this.sequence[this.beat-1]
-    for (var i = 0; i < sequenced.length; i++) {
-      this.sounds[sequenced[i]].play();
-    }
-    this.grid[this.beat-1].addClass('playing');
+    if (this.playing) {
 
-    this.beat += 1;
-    if (this.beat > this.beats) this.beat = 1;
+      var sequenced = this.sequence[this.beat-1]
+      for (var i = 0; i < sequenced.length; i++) {
+        this.sounds[sequenced[i]].play();
+      }
+      var btn = this.grid[this.beat-1]
+      btn.addClass('playing');
+      var turnoff = function() { 
+        btn.removeClass('playing');
+      }
+      setTimeout(turnoff, 50);
+  
+      this.beat += 1;
+      if (this.beat > this.beats) this.beat = 1;
+    }
   },
 
   initialize: function() {
