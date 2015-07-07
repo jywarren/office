@@ -205,7 +205,7 @@ Office = Class({
             var i = parseInt($(this).attr('index'));
             $(this).toggleClass('playing');
             // could a closure here be cleaner?
-            if (that.exists.apply(that,[i,that.voice])) that.unProgram.apply(that,i,that.voice);
+            if (that.exists.apply(that,[i,that.voice])) that.unProgram.apply(that,[i,that.voice]);
             else that.program.apply(that,[i,that.voice]);
           }
           $('.grid .btn').click(onClick);
