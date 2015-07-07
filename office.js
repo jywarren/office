@@ -80,9 +80,11 @@ Office = Class({
   // toggle playing the sequence
   togglePlay: function() {
     if (this.playing) {
+      $('.play').removeClass('red');
       this.playing = false;
       this.beat = 1;
     } else {
+      $('.play').addClass('red');
       this.playing = true;
       this.beat = 1;
       this.run();
