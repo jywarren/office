@@ -23,7 +23,7 @@ Office = Class({
   sampleRate: 44100,
   bpm:        100,
   beats:      16,
-  sequence:   [],
+  mode: 'play', // 'sequence', 'record'
   playing: false,
 
   play: function() {
@@ -49,6 +49,8 @@ Office = Class({
         this.sounds[sequenced[i]].play();
       }
       var btn = this.grid[this.beat-1]
+      // first store existing button state, so blinking works
+      // or, skip buttons which are blinking
       btn.addClass('playing');
       var turnoff = function() { 
         btn.removeClass('playing');
@@ -61,8 +63,8 @@ Office = Class({
   },
 
   initialize: function() {
-    this.recording = false;
     this.voice = false;
+    this.sequence = [];
 
     // build sequence
     for (var i = 0; i < this.beats; i++) {
@@ -75,7 +77,7 @@ Office = Class({
     this.programMultiple([3,7,11,15],'snare');
 
     $('.bpm').click(this.nextBpm.bind(this));
-    $('.record').click(this.record.bind(this));
+    $('.sequence').click(this.author.bind(this));
 
     this.setup();
   },
@@ -85,10 +87,34 @@ Office = Class({
     this.sequence[i].push(note);
   },
 
+  unProgram: function(i,voice) {
+    for (var j = 0; j < this.sequence[i].length; j++) {
+      if (this.sequence[i][j] == voice) {
+        console.log('remove',voice,'from',i);
+        this.sequence[i].splice(j,1);
+      }
+    }
+  },
+
   programMultiple: function(a,note) {
     console.log(note,'at',a.join(','));
     for (var i = 0; i < a.length; i++) {
       this.sequence[a[i]-1].push(note);
+    }
+  },
+
+  exists: function(i,voice) {
+    var exists = false;
+    for (var j = 0; j < this.sequence[i].length; j++) {
+      if (this.sequence[i][j] == voice) exists = true;
+    }
+    return exists;
+  },
+
+  display: function(voice) {
+    for (var i = 0; i < this.sequence.length; i++) {
+      if (this.exists(i,voice)) $('.btn-'+i).addClass('playing');
+      else $('.btn-'+i).removeClass('playing');
     }
   },
 
@@ -113,19 +139,33 @@ Office = Class({
           $(el).attr('sound',key);
           sound.onend = function() {
             // turn off LED
-            $(el).addClass('playing');
+            $(el).removeClass('playing');
           }
-          // won't have 'this' scope in click handler
-          var that = this;
-          var onClick = function() {
-            // turn on LED
-            $(this).removeClass('playing');
-            that.sounds[$(this).attr('sound')].play();
-          }
-          $('.btn-'+index).click(onClick);
         }
       }
     }
+    this.setButtonMode();
+  },
+
+  setButtonMode: function() {
+    // won't have 'this' scope in click handler
+    var that = this;
+    if (this.mode == 'play') {
+      $('.grid .btn').removeClass('playing');
+      var onClick = function() {
+        // turn on LED
+        $(this).addClass('playing');
+        that.sounds[$(this).attr('sound')].play();
+      }
+    } else if (this.mode == 'sequence') {
+      this.display();
+      var onClick = function() {
+        // turn on LED
+        $(this).toggleClass('playing');
+      }
+      
+    }
+    $('.grid .btn').click(onClick);
   },
 
   nextBpm: function() {
@@ -135,17 +175,15 @@ Office = Class({
     console.log(this.bpm);
   },
 
-  record: function() {
-    if (this.recording) {
-      $('.record').removeClass('red');
+  author: function() {
+    if (this.mode == 'sequence') {
+      $('.sequence').removeClass('red');
+      this.mode = 'play';
       this.voice = false;
       // restore original click handlers for buttons; just playing
-
-
-
-
+      this.setButtonMode();
     } else {
-      $('.record').addClass('red');
+      $('.sequence').addClass('red');
       if (this.voice == false) {
         // choose a voice
         var blinkChoice = function() {
@@ -157,12 +195,21 @@ Office = Class({
           $('.grid .btn').removeClass('red');
           that.voice = $(this).attr('sound');
           $('.grid .btn').off('click');
+          // show which buttons are already active
+          for (var i = 0; i < that.grid.length; i++) {
+            if (that.exists.apply(that,[i,that.voice])) that.grid[i].addClass('playing');
+            else that.grid[i].removeClass('playing');
+          }
           // each button programs its position with this.voice
           var onClick = function() {
             var i = parseInt($(this).attr('index'));
-            that.program.bind(that,i,that.voice)();
+            $(this).toggleClass('playing');
+            // could a closure here be cleaner?
+            if (that.exists.apply(that,[i,that.voice])) that.unProgram.apply(that,i,that.voice);
+            else that.program.apply(that,[i,that.voice]);
           }
           $('.grid .btn').click(onClick);
+          that.mode = 'sequence';
         }
         // clear other listeners
         $('.grid .btn').off('click');
