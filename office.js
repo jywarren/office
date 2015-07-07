@@ -22,7 +22,6 @@ Office = Class({
   size:       4,
   sampleRate: 44100,
   bpm:        100,
-  sequence:   [],
   beats:      16,
   mode: 'play', // 'sequence', 'record'
   playing: false,
@@ -50,6 +49,8 @@ Office = Class({
         this.sounds[sequenced[i]].play();
       }
       var btn = this.grid[this.beat-1]
+      // first store existing button state, so blinking works
+      // or, skip buttons which are blinking
       btn.addClass('playing');
       var turnoff = function() { 
         btn.removeClass('playing');
@@ -63,6 +64,7 @@ Office = Class({
 
   initialize: function() {
     this.voice = false;
+    this.sequence = [];
 
     // build sequence
     for (var i = 0; i < this.beats; i++) {
@@ -103,7 +105,6 @@ Office = Class({
 
   exists: function(i,voice) {
     var exists = false;
-console.log('this in exists',this);
     for (var j = 0; j < this.sequence[i].length; j++) {
       if (this.sequence[i][j] == voice) exists = true;
     }
@@ -194,14 +195,18 @@ console.log('this in exists',this);
           $('.grid .btn').removeClass('red');
           that.voice = $(this).attr('sound');
           $('.grid .btn').off('click');
+          // show which buttons are already active
+          for (var i = 0; i < that.grid.length; i++) {
+            if (that.exists.apply(that,[i,that.voice])) that.grid[i].addClass('playing');
+            else that.grid[i].removeClass('playing');
+          }
           // each button programs its position with this.voice
           var onClick = function() {
-console.log('click',that.exists.bind(that,i,that.voice)())
             var i = parseInt($(this).attr('index'));
             $(this).toggleClass('playing');
             // could a closure here be cleaner?
-            if (that.exists.bind(that,i,that.voice)()) that.unProgram.bind(that,i,that.voice)();
-            else that.program.bind(that,i,that.voice)();
+            if (that.exists.apply(that,[i,that.voice])) that.unProgram.apply(that,i,that.voice);
+            else that.program.apply(that,[i,that.voice]);
           }
           $('.grid .btn').click(onClick);
           that.mode = 'sequence';
