@@ -4,6 +4,7 @@ jQuery(document).ready(function($) {
 
 });
 
+// simple class declaration & inheritance
 Class = function(methods) {   
   var klass = function() {    
     this.initialize.apply(this, arguments);          
@@ -19,14 +20,65 @@ Class = function(methods) {
 };
 
 Office = Class({
-  size:       4,
-  sampleRate: 44100,
+  size:       4, // per side
   bpm:        100,
   beats:      16,
   mode: 'play', // 'sequence', 'record'
   playing: false,
 
-  play: function() {
+  initialize: function() {
+    this.voice = false;
+    this.sequence = [];
+
+    // build empty sequence
+    for (var i = 0; i < this.beats; i++) {
+      this.sequence.push([]);
+    }
+
+    // fill sequence
+    this.programMultiple([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],'closedHat');
+    this.programMultiple([1,5,9,13],'kick');
+    this.programMultiple([3,7,11,15],'snare');
+
+    // set up actual HTML grid buttons
+    this.buildLayout();
+
+    // set up control button listeners
+    $('.play').click(function(){ office.togglePlay.apply(office); });
+    $('.bpm').click(this.nextBpm.bind(this));
+    $('.sequence').click(this.toggleAuthor.bind(this));
+  },
+
+  buildLayout: function() {
+    this.grid = [];
+    for (var y = 0; y < this.size; y++) {
+      $('.grid').append('<p></p>');
+      for (var x = 0; x < this.size; x++) {
+        var index = y*this.size+x;
+        var icon = 'fa-circle-thin'
+        var el = '<a class="btn btn-lg btn-inverse btn-'+index+'"><i class="fa '+icon+'"></i></a>'
+
+        $('.grid p:last').append(el)
+        this.grid.push($('.grid p:last .btn:last'));
+        el = $('.btn-'+index)
+        $(el).attr('index',index);
+
+        var key = Object.keys(this.voices)[index];
+        var sound = this.voices[key];
+        if (sound) {
+          $(el).attr('sound',key);
+          sound.onend = function() {
+            // turn off LED
+            $(el).removeClass('playing');
+          }
+        }
+      }
+    }
+    this.setButtonMode();
+  },
+
+  // toggle playing the sequence
+  togglePlay: function() {
     if (this.playing) {
       this.playing = false;
       this.beat = 1;
@@ -37,49 +89,30 @@ Office = Class({
     }
   },
 
+  // actually play the sequence for one beat
   run: function() {
     if (this.playing) this.timeout = setTimeout(this.run.bind(this),1000*60/(this.bpm*2));
-
-    $('.grid .btn').removeClass('playing');
 
     if (this.playing) {
 
       var sequenced = this.sequence[this.beat-1]
       for (var i = 0; i < sequenced.length; i++) {
-        this.sounds[sequenced[i]].play();
+        this.voices[sequenced[i]].play();
       }
       var btn = this.grid[this.beat-1]
-      // first store existing button state, so blinking works
-      // or, skip buttons which are blinking
-      btn.addClass('playing');
-      var turnoff = function() { 
-        btn.removeClass('playing');
-      }
-      setTimeout(turnoff, 50);
-  
+
+      // skip buttons which are blinking
+      if (!btn.hasClass('playing')) {
+        btn.addClass('playing');
+        var turnoff = function() { 
+          btn.removeClass('playing');
+        }
+        setTimeout(turnoff, 50);
+      } 
+ 
       this.beat += 1;
       if (this.beat > this.beats) this.beat = 1;
     }
-  },
-
-  initialize: function() {
-    this.voice = false;
-    this.sequence = [];
-
-    // build sequence
-    for (var i = 0; i < this.beats; i++) {
-      this.sequence.push([]);
-    }
-    $('.play').click(function(){ office.play.apply(office); });
-
-    this.programMultiple([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],'closedHat');
-    this.programMultiple([1,5,9,13],'kick');
-    this.programMultiple([3,7,11,15],'snare');
-
-    $('.bpm').click(this.nextBpm.bind(this));
-    $('.sequence').click(this.author.bind(this));
-
-    this.setup();
   },
 
   program: function(i,note) {
@@ -103,6 +136,7 @@ Office = Class({
     }
   },
 
+  // does given <voice> exist in slot <i>
   exists: function(i,voice) {
     var exists = false;
     for (var j = 0; j < this.sequence[i].length; j++) {
@@ -111,40 +145,12 @@ Office = Class({
     return exists;
   },
 
-  display: function(voice) {
+  // show which slots have given <voice> with highlight
+  displayVoice: function(voice) {
     for (var i = 0; i < this.sequence.length; i++) {
-      if (this.exists(i,voice)) $('.btn-'+i).addClass('playing');
-      else $('.btn-'+i).removeClass('playing');
+      if (this.exists(i,this.voice)) $('.btn-'+i).addClass('sequenced');
+      else $('.btn-'+i).removeClass('sequenced');
     }
-  },
-
-  // build the layout
-  setup: function() {
-    this.grid = [];
-    for (var y = 0; y < this.size; y++) {
-      $('.grid').append('<p></p>');
-      for (var x = 0; x < this.size; x++) {
-        var index = y*this.size+x;
-        var icon = 'fa-circle-thin'
-        var el = '<a class="btn btn-lg btn-inverse btn-'+index+'"><i class="fa '+icon+'"></i></a>'
-
-        $('.grid p:last').append(el)
-        this.grid.push($('.grid p:last .btn:last'));
-        el = $('.btn-'+index)
-        $(el).attr('index',index);
-
-        var key = Object.keys(this.sounds)[index];
-        var sound = this.sounds[key];
-        if (sound) {
-          $(el).attr('sound',key);
-          sound.onend = function() {
-            // turn off LED
-            $(el).removeClass('playing');
-          }
-        }
-      }
-    }
-    this.setButtonMode();
   },
 
   setButtonMode: function() {
@@ -152,16 +158,19 @@ Office = Class({
     var that = this;
     if (this.mode == 'play') {
       $('.grid .btn').removeClass('playing');
+      $('.grid .btn').removeClass('sequenced');
       var onClick = function() {
         // turn on LED
         $(this).addClass('playing');
-        that.sounds[$(this).attr('sound')].play();
+        that.voices[$(this).attr('sound')].play();
       }
     } else if (this.mode == 'sequence') {
-      this.display();
+      // show when this voice is currently sequenced
+      this.displayVoice();
       var onClick = function() {
-        // turn on LED
-        $(this).toggleClass('playing');
+        // turn on/off LED
+        var i = parseInt($(this).attr('index'));
+        that.displayVoice.apply(that);
       }
       
     }
@@ -175,14 +184,20 @@ Office = Class({
     console.log(this.bpm);
   },
 
-  author: function() {
-    if (this.mode == 'sequence') {
+  // toggle authoring mode
+  toggleAuthor: function() {
+    if (this.mode == 'sequence' || this.mode == 'choose') {
       $('.sequence').removeClass('red');
+      $('.sequence').removeClass('sequenced');
       this.mode = 'play';
       this.voice = false;
+      // stop blinking
+      clearInterval(this.choiceInterval);
+      $('.grid .btn').removeClass('red');
       // restore original click handlers for buttons; just playing
       this.setButtonMode();
     } else {
+      this.mode = 'choose';
       $('.sequence').addClass('red');
       if (this.voice == false) {
         // choose a voice
@@ -196,17 +211,17 @@ Office = Class({
           that.voice = $(this).attr('sound');
           $('.grid .btn').off('click');
           // show which buttons are already active
-          for (var i = 0; i < that.grid.length; i++) {
-            if (that.exists.apply(that,[i,that.voice])) that.grid[i].addClass('playing');
-            else that.grid[i].removeClass('playing');
-          }
+          that.displayVoice.apply(that);
           // each button programs its position with this.voice
           var onClick = function() {
             var i = parseInt($(this).attr('index'));
-            $(this).toggleClass('playing');
             // could a closure here be cleaner?
-            if (that.exists.apply(that,[i,that.voice])) that.unProgram.apply(that,[i,that.voice]);
-            else that.program.apply(that,[i,that.voice]);
+            if (that.exists.apply(that,[i,that.voice])) {
+              that.unProgram.apply(that,[i,that.voice]);
+            } else {
+              that.program.apply(that,[i,that.voice]);
+            }
+            that.setButtonMode.apply(that);
           }
           $('.grid .btn').click(onClick);
           that.mode = 'sequence';
@@ -218,7 +233,8 @@ Office = Class({
     }
   },
 
-  sounds: {
+  // [should be] 16 voices
+  voices: {
     'kick': new Howl({
       urls: ['audio/CYCdh_AcouKick-01.mp3'],
     }),
