@@ -42,9 +42,11 @@ p {
   color:#a00;
 }
 
+/*
 .btn-inverse:active {
   color:#f00;
 }
+*/
 
 .btn-inverse.playing {
   color:#f00;
@@ -59,12 +61,18 @@ p {
   color:#048;
 }
 
+/*
 .controls .btn-inverse:active {
   color:#08f;
 }
+*/
 
 .controls .btn-inverse.red,
 .grid .btn-inverse.red {
+  color:#f00;
+}
+
+.grid .btn-inverse.sequenced {
   color:#f00;
 }
 
