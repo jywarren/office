@@ -22,6 +22,7 @@ Class = function(methods) {
 Office = Class({
   size:       4, // per side
   bpm:        100,
+  lastBeat:   0, // # timestamp of last beat
   beats:      16,
   mode: 'play', // 'sequence', 'record'
   playing: false,
@@ -29,6 +30,9 @@ Office = Class({
   initialize: function() {
     this.voice = false;
     this.sequence = [];
+    this.setBpm(this.bpm);
+
+    this.interval = setInterval(this.timer.bind(this),10);
 
     // build empty sequence
     for (var i = 0; i < this.beats; i++) {
@@ -91,10 +95,16 @@ Office = Class({
     }
   },
 
+  timer: function() {
+    if (this.playing && Date.now()-this.lastBeat > this.milliseconds) {
+console.log('beat!');
+      this.run.bind(this)();
+      this.lastBeat = Date.now();
+    }
+  },
+
   // actually play the sequence for one beat
   run: function() {
-    if (this.playing) this.timeout = setTimeout(this.run.bind(this),1000*60/(this.bpm*2));
-
     if (this.playing) {
 
       var sequenced = this.sequence[this.beat-1]
@@ -179,10 +189,15 @@ Office = Class({
     $('.grid .btn').click(onClick);
   },
 
+  setBpm: function(bpm) {
+    this.bpm = bpm;
+    this.milliseconds = 1000*60/(this.bpm*2); // not sure why *2 but it works
+  },
+
   nextBpm: function() {
-    if      (this.bpm == 80)  this.bpm = 100;
-    else if (this.bpm == 100) this.bpm = 120;
-    else                      this.bpm =  80;
+    if      (this.bpm == 80)  this.setBpm(100);
+    else if (this.bpm == 100) this.setBpm(120);
+    else                      this.setBpm(80);
     console.log(this.bpm);
   },
 
